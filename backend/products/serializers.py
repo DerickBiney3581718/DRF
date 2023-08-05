@@ -4,7 +4,8 @@ from rest_framework import serializers, renderers, parsers
 from rest_framework.reverse import reverse
 import json
 from .models import Product
-
+from .validators import validate_title
+from api.serializers import UserPublicSerializer
 
 class ProductSerializer(serializers.ModelSerializer):
     # get_discount = serializers.SerializerMethodField(read_only=True)
@@ -12,11 +13,12 @@ class ProductSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(
         view_name='product-detail', lookup_field='pk')
     email = serializers.EmailField(write_only=True)
-
+    title = serializers.CharField(validators=[validate_title])
+    owner = UserPublicSerializer(source='user',read_only=True)
     class Meta:
         model = Product
         fields = [
-           'url','email', 'edit_url', 'pk', 'title', 'content', 'price', 'sale_price',
+          'owner', 'url','email', 'edit_url', 'pk', 'title', 'content', 'price', 'sale_price',
         ]
     def create(self, validate_data):
         email = validate_data.pop('email')
@@ -27,8 +29,8 @@ class ProductSerializer(serializers.ModelSerializer):
         if req is None:
             return None
         return reverse("product-edit", kwargs={'pk': obj.id}, request=req)
-    def validate_title(self, value):
-        return value
+    def get_user_data(self, obj):
+        return {'username': obj.user.username}
         # def get_my_discount(self, obj):
         # if not hasattr(obj, 'id')
         #     return obj.get_discount()
